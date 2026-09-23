@@ -1,0 +1,213 @@
+/* ============================================================
+   カラーとサイズをここで一元管理する（CSS変数）
+   ここの値を変えるだけで全体の見た目が変わります
+   ============================================================ */
+:root {
+  --sky:    #EEF1F5;  /* 背景：曇り空の薄灰青 */
+  --paper:  #FFFFFF;
+  --ink:    #1B2A41;  /* 濃紺：文字 */
+  --muted:  #6B7C93;  /* 補助文字 */
+  --cool:   #3A6EA8;  /* 最低気温 */
+  --warm:   #E8703A;  /* 最高気温 */
+  --line:   #D5DCE5;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--sky);
+  color: var(--ink);
+  font-family: "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 40px 20px 64px;
+}
+
+/* --- ヘッダー --- */
+.masthead { margin-bottom: 28px; }
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* --- 地域チップ --- */
+.areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.chip {
+  padding: 8px 15px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.chip:hover { border-color: var(--cool); }
+
+.chip:focus-visible {
+  outline: 2px solid var(--cool);
+  outline-offset: 2px;
+}
+
+.chip--on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+/* --- パネル --- */
+.panel { min-height: 220px; }
+
+.empty, .hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* --- カード --- */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+  animation: rise 0.3s ease-out;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none; }
+}
+
+.card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.place { margin: 0; font-size: 20px; font-weight: 700; }
+
+.date {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.condition {
+  margin: 18px 0 0;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* --- 主役の気温 --- */
+.temp {
+  margin: 2px 0 26px;
+  font-size: 76px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--warm);
+  font-variant-numeric: tabular-nums;
+}
+
+.temp__unit {
+  font-size: 24px;
+  font-weight: 500;
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+
+/* --- 気温レンジバー --- */
+.range__track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--sky);
+  overflow: hidden;
+}
+
+.range__fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--cool), var(--warm));
+}
+
+.range__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- 補足情報 --- */
+.facts {
+  display: flex;
+  gap: 28px;
+  margin: 24px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.fact dt {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.fact dd {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- エラー --- */
+.error {
+  border-left: 3px solid var(--warm);
+  padding: 4px 0 4px 14px;
+}
+
+.error__head { margin: 0 0 4px; font-weight: 600; font-size: 15px; }
+.error__body { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* --- フッター --- */
+.foot {
+  margin-top: 36px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
