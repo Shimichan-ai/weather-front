@@ -1,14 +1,14 @@
 /* ============================================================
-   カラーとサイズをここで一元管理する（CSS変数）
-   ここの値を変えるだけで全体の見た目が変わります
+   繧ｫ繝ｩ繝ｼ縺ｨ繧ｵ繧､繧ｺ繧偵％縺薙〒荳蜈�ｮ｡逅�☆繧具ｼ�CSS螟画焚��
+   縺薙％縺ｮ蛟､繧貞､峨∴繧九□縺代〒蜈ｨ菴薙�隕九◆逶ｮ縺悟､峨ｏ繧翫∪縺�
    ============================================================ */
 :root {
-  --sky:    #EEF1F5;  /* 背景：曇り空の薄灰青 */
+  --sky:    #EEF1F5;  /* 閭梧勹�壽寐繧顔ｩｺ縺ｮ阮��髱� */
   --paper:  #FFFFFF;
-  --ink:    #1B2A41;  /* 濃紺：文字 */
-  --muted:  #6B7C93;  /* 補助文字 */
-  --cool:   #3A6EA8;  /* 最低気温 */
-  --warm:   #E8703A;  /* 最高気温 */
+  --ink:    #1B2A41;  /* 豼�ｴｺ�壽枚蟄� */
+  --muted:  #6B7C93;  /* 陬懷勧譁�ｭ� */
+  --cool:   #3A6EA8;  /* 譛菴取ｰ玲ｸｩ */
+  --warm:   #E8703A;  /* 譛鬮俶ｰ玲ｸｩ */
   --line:   #D5DCE5;
 }
 
@@ -28,7 +28,7 @@ body {
   padding: 40px 20px 64px;
 }
 
-/* --- ヘッダー --- */
+/* --- 繝倥ャ繝繝ｼ --- */
 .masthead { margin-bottom: 28px; }
 
 .eyebrow {
@@ -46,7 +46,7 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* --- 地域チップ --- */
+/* --- 蝨ｰ蝓溘メ繝�� --- */
 .areas {
   display: flex;
   flex-wrap: wrap;
@@ -79,7 +79,7 @@ body {
   color: #fff;
 }
 
-/* --- パネル --- */
+/* --- 繝代ロ繝ｫ --- */
 .panel { min-height: 220px; }
 
 .empty, .hint {
@@ -88,7 +88,7 @@ body {
   margin: 0;
 }
 
-/* --- カード --- */
+/* --- 繧ｫ繝ｼ繝� --- */
 .card {
   background: var(--paper);
   border: 1px solid var(--line);
@@ -122,16 +122,29 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* --- 螟ｩ豌励い繧､繧ｳ繝ｳ�句､ｩ豌怜錐 --- */
 .condition {
-  margin: 18px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+
+.condition__icon {
+  width: 56px;   /* 蜈�判蜒上�64px縲ょｰ代＠邵ｮ繧√※陦ｨ遉ｺ縺吶ｋ縺ｨ霈ｪ驛ｭ縺檎ｷ�縺ｾ繧� */
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.condition__text {
   font-size: 15px;
   letter-spacing: 0.08em;
   color: var(--muted);
 }
 
-/* --- 主役の気温 --- */
+/* --- 荳ｻ蠖ｹ縺ｮ豌玲ｸｩ --- */
 .temp {
-  margin: 2px 0 26px;
+  margin: 6px 0 26px;
   font-size: 76px;
   font-weight: 700;
   line-height: 1;
@@ -147,7 +160,7 @@ body {
   letter-spacing: 0;
 }
 
-/* --- 気温レンジバー --- */
+/* --- 豌玲ｸｩ繝ｬ繝ｳ繧ｸ繝舌� --- */
 .range__track {
   position: relative;
   height: 8px;
@@ -173,7 +186,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* --- 補足情報 --- */
+/* --- 陬懆ｶｳ諠��ｱ --- */
 .facts {
   display: flex;
   gap: 28px;
@@ -195,7 +208,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* --- エラー --- */
+/* --- 繧ｨ繝ｩ繝ｼ --- */
 .error {
   border-left: 3px solid var(--warm);
   padding: 4px 0 4px 14px;
@@ -204,7 +217,7 @@ body {
 .error__head { margin: 0 0 4px; font-weight: 600; font-size: 15px; }
 .error__body { margin: 0; font-size: 13px; color: var(--muted); }
 
-/* --- フッター --- */
+/* --- 繝輔ャ繧ｿ繝ｼ --- */
 .foot {
   margin-top: 36px;
   font-size: 11px;
