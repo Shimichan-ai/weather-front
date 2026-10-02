@@ -2,10 +2,7 @@ import { useState, useEffect } from "react";
 import "./App.css";
 
 // ============================================================
-// ★ここだけ書き換える★
-// Renderで発行された自分のURLに置き換えてください。
-// 末尾のスラッシュは付けないこと。
-//   例: https://weather-app-ytf7.onrender.com
+// 自分のRenderのURL。末尾のスラッシュは付けないこと。
 // ============================================================
 const API_BASE = "https://weather-app-ytf7.onrender.com";
 
@@ -14,17 +11,13 @@ const SCALE_MIN = -10;
 const SCALE_MAX = 40;
 
 export default function App() {
-  // --- 状態（state）の定義 ---
-  const [areas, setAreas] = useState([]);        // 地域一覧
-  const [selected, setSelected] = useState(null); // 選択中の地域
-  const [weather, setWeather] = useState(null);   // 天気データ
-  const [loading, setLoading] = useState(false);  // 通信中かどうか
-  const [error, setError] = useState(null);       // エラー文言
+  const [areas, setAreas] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // ============================================================
-  // 1回目の表示時に一度だけ実行される（GET /areas）
-  //   第2引数の [] が「最初の1回だけ」という意味
-  // ============================================================
+  // 最初の1回だけ実行（GET /areas）
   useEffect(() => {
     async function loadAreas() {
       try {
@@ -39,20 +32,15 @@ export default function App() {
     loadAreas();
   }, []);
 
-  // ============================================================
-  // selected が変わるたびに実行される（GET /weather?area=...）
-  //   第2引数の [selected] が「selectedが変わったら実行」という意味
-  // ============================================================
+  // selected が変わるたびに実行（GET /weather?area=...）
   useEffect(() => {
-    if (!selected) return; // まだ何も選ばれていないなら何もしない
+    if (!selected) return;
 
     async function loadWeather() {
       setLoading(true);
       setError(null);
       setWeather(null);
       try {
-        // 地域名が日本語なので encodeURIComponent でURL用に変換する。
-        // これを忘れると「東京」が壊れてサーバーに届く。
         const url = `${API_BASE}/weather?area=${encodeURIComponent(selected)}`;
         const res = await fetch(url);
         if (!res.ok) {
@@ -63,24 +51,22 @@ export default function App() {
       } catch (e) {
         setError(e.message);
       } finally {
-        setLoading(false); // 成功でも失敗でも必ず通る
+        setLoading(false);
       }
     }
     loadWeather();
   }, [selected]);
 
-  // 気温バーの位置を計算する（0〜100%）
   const toPercent = (t) =>
     ((t - SCALE_MIN) / (SCALE_MAX - SCALE_MIN)) * 100;
 
   return (
     <div className="app">
       <header className="masthead">
-        <p className="eyebrow">Open-Meteo 観測データ</p>
+        <p className="eyebrow">WeatherAPI.com 提供</p>
         <h1 className="title">きょうの天気</h1>
       </header>
 
-      {/* 地域選択 */}
       <nav className="areas" aria-label="地域を選ぶ">
         {areas.length === 0 && !error && (
           <p className="hint">地域一覧を読み込んでいます…</p>
@@ -96,7 +82,6 @@ export default function App() {
         ))}
       </nav>
 
-      {/* 表示エリア */}
       <main className="panel">
         {!selected && !error && (
           <p className="empty">地域を選ぶと今日の天気が出ます。</p>
@@ -118,7 +103,20 @@ export default function App() {
               <time className="date">{weather.date}</time>
             </div>
 
-            <p className="condition">{weather.weather}</p>
+            {/* アイコンと天気名を横並びに */}
+            <div className="condition">
+              {weather.icon && (
+                <img
+                  className="condition__icon"
+                  src={weather.icon}
+                  alt=""          /* 隣に天気名があるので、読み上げは重複させない */
+                  width="64"
+                  height="64"
+                  loading="lazy"
+                />
+              )}
+              <span className="condition__text">{weather.weather}</span>
+            </div>
 
             {/* 主役：最高気温 */}
             <p className="temp">
