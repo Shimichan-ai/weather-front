@@ -66,6 +66,48 @@ function dayLabel(dateStr, index) {
   return WEEKDAYS[new Date(y, m - 1, d).getDay()];
 }
 
+
+// ============================================================
+// 再試行つきの fetch
+//
+//   Renderの無料プランは15分アクセスが無いと停止し、
+//   復帰に50秒以上かかる。最初の1回は必ず失敗するので、
+//   諦めずに数回やり直す。
+//
+//   重要なのは「やり直す価値のある失敗」だけを選ぶこと:
+//     - 通信そのものが成立しない → サーバーが起動中かもしれない → 再試行
+//     - 404や429が返ってきた     → サーバーは生きていて断っている → 再試行しない
+//   区別せず全部やり直すと、無駄に待たせるだけになる。
+// ============================================================
+const ATTEMPT_TIMEOUT = 12000;   // 1回あたりの待ち上限(ms)
+const RETRY_WAIT = 3000;         // 失敗後に次を試すまでの間隔(ms)
+const MAX_ATTEMPTS = 6;          // 合計で最長約90秒
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function fetchWithRetry(url, onRetry) {
+  let lastError;
+
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    // 応答が無いまま固まるのを防ぐ。時間切れで中断して次を試す
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      return res;   // HTTPエラーでもここで返す（呼び出し側が判断する）
+    } catch (e) {
+      clearTimeout(timer);
+      lastError = e;
+      if (i < MAX_ATTEMPTS - 1) {
+        onRetry?.(i + 1);
+        await sleep(RETRY_WAIT);
+      }
+    }
+  }
+  throw lastError;
+}
+
 const COL_WIDTH = 52;   // 1時間ぶんの列幅(px)。CSSのgrid列幅と必ず揃える
 const CHART_H = 76;     // グラフ領域の高さ
 const Y_TOP = 30;       // 線が到達する一番上（上に気温の数字を置くので余白を取る）
@@ -112,6 +154,7 @@ export default function App() {
   const [coords, setCoords] = useState({});     // 地域名 → [緯度, 経度]
   const [week, setWeek] = useState(null);       // 週間予報
   const [weekError, setWeekError] = useState(null);
+  const [waking, setWaking] = useState(0);   // 再試行の回数。0なら通常
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -122,13 +165,15 @@ export default function App() {
   useEffect(() => {
     async function loadAreas() {
       try {
-        const res = await fetch(`${API_BASE}/areas`);
+        const res = await fetchWithRetry(`${API_BASE}/areas`, setWaking);
         if (!res.ok) throw new Error(`地域一覧の取得に失敗しました (${res.status})`);
         const data = await res.json();
         setAreas(data.areas);
         setCoords(data.coords || {});
-      } catch (e) {
-        setError(e.message);
+      } catch {
+        setError("サーバーに接続できませんでした。時間をおいて再度お試しください。");
+      } finally {
+        setWaking(0);
       }
     }
     loadAreas();
@@ -144,16 +189,21 @@ export default function App() {
       setWeather(null);
       try {
         const url = `${API_BASE}/weather?area=${encodeURIComponent(selected)}`;
-        const res = await fetch(url);
+        const res = await fetchWithRetry(url, setWaking);
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.detail || `取得に失敗しました (${res.status})`);
         }
         setWeather(await res.json());
       } catch (e) {
-        setError(e.message);
+        setError(
+          e.name === "AbortError" || e.name === "TypeError"
+            ? "サーバーに接続できませんでした。時間をおいて再度お試しください。"
+            : e.message
+        );
       } finally {
         setLoading(false);
+        setWaking(0);
       }
     }
     loadWeather();
@@ -224,7 +274,7 @@ export default function App() {
       </header>
 
       <nav className="areas" aria-label="地域を選ぶ">
-        {areas.length === 0 && !error && (
+        {areas.length === 0 && !error && waking === 0 && (
           <p className="hint">地域一覧を読み込んでいます…</p>
         )}
         {areas.map((name) => (
@@ -239,7 +289,21 @@ export default function App() {
       </nav>
 
       <main className="panel">
-        {!selected && !error && (
+        {/* サーバーがスリープから復帰する間の案内。
+            黙って待たせると「壊れている」と思われる */}
+        {waking > 0 && (
+          <div className="waking">
+            <span className="waking__dot" />
+            <div>
+              <p className="waking__head">サーバーを起動しています</p>
+              <p className="waking__body">
+                しばらく使われていなかったため、最初の表示に1分ほどかかります（{waking}/{MAX_ATTEMPTS - 1}回目）
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!selected && !error && waking === 0 && (
           <p className="empty">地域を選ぶと今日の天気が出ます。</p>
         )}
 
