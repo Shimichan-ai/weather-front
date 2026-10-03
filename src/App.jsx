@@ -6,6 +6,10 @@ import "./App.css";
 //   SVGは「左上が原点、下に行くほどyが大きい」座標系。
 //   気温は高いほど上に描きたいので、計算で上下を反転させる。
 // ============================================================
+// 自作アイコンは public/icons/ に置く。Viteは public の中身を
+// サイトのルート直下として配信するので、パスは /icons/... になる。
+const iconSrc = (name) => `/icons/${name || "cloudy"}.png`;
+
 const COL_WIDTH = 52;   // 1時間ぶんの列幅(px)。CSSのgrid列幅と必ず揃える
 const CHART_H = 76;     // グラフ領域の高さ
 const Y_TOP = 30;       // 線が到達する一番上（上に気温の数字を置くので余白を取る）
@@ -157,10 +161,10 @@ export default function App() {
 
             {/* アイコンと天気名を横並びに */}
             <div className="condition">
-              {weather.icon && (
+              {weather.icon_name && (
                 <img
                   className="condition__icon"
-                  src={weather.icon}
+                  src={iconSrc(weather.icon_name)}
                   alt=""          /* 隣に天気名があるので、読み上げは重複させない */
                   width="64"
                   height="64"
@@ -286,10 +290,10 @@ export default function App() {
                     {/* 3行目：アイコン */}
                     {weather.hours.map((h) => (
                       <span key={`i-${h.time}`} className="hour__iconwrap">
-                        {h.icon && (
+                        {h.icon_name && (
                           <img
                             className="hour__icon"
-                            src={h.icon}
+                            src={iconSrc(h.icon_name)}
                             alt={h.weather}
                             width="30"
                             height="30"
