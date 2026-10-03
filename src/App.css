@@ -224,3 +224,82 @@ body {
   color: var(--muted);
   letter-spacing: 0.04em;
 }
+
+/* ============================================================
+   1時間ごとのストリップ
+   ============================================================ */
+.hourly {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.hourly__head {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+/* 横スクロール領域。はみ出す分はここで吸収し、
+   ページ全体が横に伸びないようにする */
+.hourly__scroll {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hour {
+  flex: 0 0 auto;        /* 縮ませない。これが無いと24件が潰れる */
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0 6px;
+  border-radius: 8px;
+}
+
+.hour--now {
+  background: var(--sky);
+}
+
+.hour__time {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hour--now .hour__time {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.hour__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.hour__temp {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 気温の棒。高さはJSX側で計算して渡している */
+.hour__bar {
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--warm), var(--cool));
+}
+
+.hour__rain {
+  font-size: 10px;
+  color: var(--cool);
+  min-height: 13px;       /* 値が無い時も高さを確保し、行がガタつかないようにする */
+  font-variant-numeric: tabular-nums;
+}

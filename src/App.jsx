@@ -147,6 +147,55 @@ export default function App() {
                 <dd>{weather.rain_prob}%</dd>
               </div>
             </dl>
+
+            {/* ---- 1時間ごと（横スクロール） ---- */}
+            {weather.hours?.length > 0 && (
+              <section className="hourly">
+                <h3 className="hourly__head">時間ごと</h3>
+                <div className="hourly__scroll">
+                  {weather.hours.map((h) => {
+                    // 棒の高さは「その日の中での相対位置」で決める。
+                    // 都市間で比べる上の気温バーとは目的が違うので、
+                    // ここでは1日の最低〜最高を物差しにして変化を読みやすくする。
+                    const span = weather.temp_max - weather.temp_min || 1;
+                    const ratio = (h.temp - weather.temp_min) / span;
+                    const barHeight = 5 + ratio * 30;
+
+                    // 観測地点の「今」の時刻を強調する
+                    const isNow = parseInt(h.time, 10) === weather.local_hour;
+
+                    return (
+                      <div
+                        key={h.time}
+                        className={`hour ${isNow ? "hour--now" : ""}`}
+                      >
+                        <span className="hour__time">
+                          {isNow ? "今" : h.time.slice(0, 2)}
+                        </span>
+                        {h.icon && (
+                          <img
+                            className="hour__icon"
+                            src={h.icon}
+                            alt={h.weather}
+                            width="32"
+                            height="32"
+                            loading="lazy"
+                          />
+                        )}
+                        <span className="hour__temp">{Math.round(h.temp)}°</span>
+                        <span
+                          className="hour__bar"
+                          style={{ height: `${barHeight}px` }}
+                        />
+                        <span className="hour__rain">
+                          {h.rain_prob > 0 ? `${h.rain_prob}%` : ""}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </article>
         )}
       </main>
