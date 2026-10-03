@@ -226,7 +226,7 @@ body {
 }
 
 /* ============================================================
-   1時間ごとのストリップ
+   1時間ごと：折れ線グラフ
    ============================================================ */
 .hourly {
   margin-top: 22px;
@@ -235,7 +235,7 @@ body {
 }
 
 .hourly__head {
-  margin: 0 0 12px;
+  margin: 0 0 6px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -245,56 +245,61 @@ body {
 /* 横スクロール領域。はみ出す分はここで吸収し、
    ページ全体が横に伸びないようにする */
 .hourly__scroll {
-  display: flex;
-  gap: 2px;
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
 }
 
-.hour {
-  flex: 0 0 auto;        /* 縮ませない。これが無いと24件が潰れる */
-  width: 52px;
-  display: flex;
-  flex-direction: column;
+/* 列幅はJSX側で指定（COL_WIDTHと揃える）。
+   grid にすることで、SVGの折れ線と時刻・アイコンの縦位置が確実に揃う */
+.hourly__grid {
+  display: grid;
+  justify-items: center;
   align-items: center;
-  gap: 3px;
-  padding: 8px 0 6px;
-  border-radius: 8px;
-}
-
-.hour--now {
-  background: var(--sky);
+  row-gap: 2px;
 }
 
 .hour__time {
   font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  padding-bottom: 2px;
 }
 
-.hour--now .hour__time {
+.hour__time--now {
   color: var(--ink);
   font-weight: 700;
 }
 
-.hour__icon {
-  width: 32px;
-  height: 32px;
+/* 全列にまたがる1枚のSVG */
+.hourly__chart {
+  grid-column: 1 / -1;
+  display: block;
 }
 
-.hour__temp {
-  font-size: 14px;
-  font-weight: 600;
+/* SVG内の文字。font-size は CSS 側で指定する */
+.hourly__label {
+  font-size: 11px;
+  fill: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-/* 気温の棒。高さはJSX側で計算して渡している */
-.hour__bar {
-  width: 3px;
-  border-radius: 2px;
-  background: linear-gradient(180deg, var(--warm), var(--cool));
+.hourly__label--now {
+  fill: var(--ink);
+  font-weight: 700;
+}
+
+.hour__iconwrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+}
+
+.hour__icon {
+  width: 30px;
+  height: 30px;
 }
 
 .hour__rain {
