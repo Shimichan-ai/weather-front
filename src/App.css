@@ -308,3 +308,106 @@ body {
   min-height: 13px;       /* 値が無い時も高さを確保し、行がガタつかないようにする */
   font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   週間予報
+   ============================================================ */
+.week {
+  margin-top: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px 16px;
+}
+
+.week__head {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+/* 曜日 / アイコン / 降水 / 最低 / 帯 / 最高 の6列。
+   帯だけが余った幅を全部もらう */
+.day {
+  display: grid;
+  grid-template-columns: 34px 32px 34px 34px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+
+.day:first-of-type {
+  border-top: none;
+}
+
+.day__label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.day--today .day__label {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.day__icon {
+  width: 32px;
+  height: 32px;
+}
+
+.day__rain {
+  font-size: 10px;
+  color: var(--cool);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.day__min,
+.day__max {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.day__min {
+  color: var(--muted);
+  text-align: right;
+}
+
+.day__max {
+  font-weight: 600;
+  text-align: right;
+}
+
+/* 気温の帯。週全体の最低〜最高を物差しにしているので、
+   位置そのものが「その日が暑いか寒いか」を表す */
+.day__track {
+  position: relative;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--sky);
+}
+
+.day__fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  min-width: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--cool), var(--warm));
+}
+
+.week__note {
+  margin: 12px 0 0;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.week__error {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}

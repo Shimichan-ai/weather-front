@@ -10,6 +10,62 @@ import "./App.css";
 // サイトのルート直下として配信するので、パスは /icons/... になる。
 const iconSrc = (name) => `/icons/${name || "cloudy"}.png`;
 
+
+// ============================================================
+// 週間予報（Open-Meteo を直接叩く）
+//
+//   なぜ自作APIを経由しないか:
+//     Open-Meteoはキー不要＝IPで利用者を識別する。
+//     Renderの共有IPだと他人の使用量で429になるため、
+//     ブラウザから直接叩いて各利用者のIPを使う。
+//
+//   Open-MeteoはWMOコードという別の番号体系を返すので、
+//   バックエンドと同じアイコン名に翻訳して揃える。
+// ============================================================
+const WMO = {
+  0:  ["clear", "晴れ"],
+  1:  ["partly-cloudy", "おおむね晴れ"],
+  2:  ["partly-cloudy", "一部曇り"],
+  3:  ["cloudy", "曇り"],
+  45: ["fog", "霧"],
+  48: ["fog", "霧"],
+  51: ["drizzle", "霧雨"],
+  53: ["drizzle", "霧雨"],
+  55: ["drizzle", "強い霧雨"],
+  56: ["drizzle", "着氷性の霧雨"],
+  57: ["drizzle", "着氷性の霧雨"],
+  61: ["rain", "弱い雨"],
+  63: ["rain", "雨"],
+  65: ["heavy-rain", "強い雨"],
+  66: ["heavy-rain", "着氷性の雨"],
+  67: ["heavy-rain", "着氷性の雨"],
+  71: ["snow", "弱い雪"],
+  73: ["snow", "雪"],
+  75: ["heavy-snow", "強い雪"],
+  77: ["snow", "霧雪"],
+  80: ["showers", "にわか雨"],
+  81: ["showers", "にわか雨"],
+  82: ["heavy-rain", "激しいにわか雨"],
+  85: ["heavy-snow", "にわか雪"],
+  86: ["heavy-snow", "強いにわか雪"],
+  95: ["thunder", "雷雨"],
+  96: ["thunder", "雷を伴うひょう"],
+  99: ["thunder", "激しい雷雨"],
+};
+
+const wmoInfo = (code) => WMO[code] || ["cloudy", "—"];
+
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+function dayLabel(dateStr, index) {
+  if (index === 0) return "今日";
+  if (index === 1) return "明日";
+  // "2026-10-05" をそのまま new Date() に渡すとUTC解釈になり
+  // 日本時間では1日ずれることがあるので、数値から組み立てる
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return WEEKDAYS[new Date(y, m - 1, d).getDay()];
+}
+
 const COL_WIDTH = 52;   // 1時間ぶんの列幅(px)。CSSのgrid列幅と必ず揃える
 const CHART_H = 76;     // グラフ領域の高さ
 const Y_TOP = 30;       // 線が到達する一番上（上に気温の数字を置くので余白を取る）
@@ -53,6 +109,9 @@ export default function App() {
   const [areas, setAreas] = useState([]);
   const [selected, setSelected] = useState(null);
   const [weather, setWeather] = useState(null);
+  const [coords, setCoords] = useState({});     // 地域名 → [緯度, 経度]
+  const [week, setWeek] = useState(null);       // 週間予報
+  const [weekError, setWeekError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -67,6 +126,7 @@ export default function App() {
         if (!res.ok) throw new Error(`地域一覧の取得に失敗しました (${res.status})`);
         const data = await res.json();
         setAreas(data.areas);
+        setCoords(data.coords || {});
       } catch (e) {
         setError(e.message);
       }
@@ -98,6 +158,46 @@ export default function App() {
     }
     loadWeather();
   }, [selected]);
+
+  // 週間予報：Open-Meteoを直接叩く。
+  // 自作APIとは独立させ、片方が落ちてももう片方は表示されるようにする。
+  useEffect(() => {
+    if (!selected || !coords[selected]) return;
+    const [lat, lon] = coords[selected];
+
+    async function loadWeek() {
+      setWeek(null);
+      setWeekError(null);
+      try {
+        const url =
+          "https://api.open-meteo.com/v1/forecast" +
+          `?latitude=${lat}&longitude=${lon}` +
+          "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+          "&timezone=Asia%2FTokyo&forecast_days=7";
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`週間予報の取得に失敗しました (${res.status})`);
+        const d = (await res.json()).daily;
+
+        // 配列が項目ごとに分かれて返るので、日付ごとにまとめ直す
+        setWeek(
+          d.time.map((date, i) => {
+            const [icon, text] = wmoInfo(d.weather_code[i]);
+            return {
+              date,
+              icon,
+              text,
+              max: d.temperature_2m_max[i],
+              min: d.temperature_2m_min[i],
+              rain: d.precipitation_probability_max[i] ?? 0,
+            };
+          })
+        );
+      } catch (e) {
+        setWeekError(e.message);
+      }
+    }
+    loadWeek();
+  }, [selected, coords]);
 
   // 現在時刻が画面に入るよう、取得のたびに横スクロールを合わせる。
   // 24時間ぶんあるので、何もしないと常に0時が見えてしまう。
@@ -314,6 +414,54 @@ export default function App() {
               </section>
             )}
           </article>
+        )}
+
+        {/* ---- 週間予報 ---- */}
+        {weather && week && (
+          <section className="week">
+            <h3 className="week__head">これからの7日間</h3>
+            {(() => {
+              // 週全体の最低〜最高を物差しにして、各日の帯の位置を決める。
+              // 「どの日が暑いか」が帯の位置だけで読めるようにする。
+              const lo = Math.min(...week.map((d) => d.min));
+              const hi = Math.max(...week.map((d) => d.max));
+              const span = hi - lo || 1;
+              const pct = (t) => ((t - lo) / span) * 100;
+
+              return week.map((d, i) => (
+                <div className={`day ${i === 0 ? "day--today" : ""}`} key={d.date}>
+                  <span className="day__label">{dayLabel(d.date, i)}</span>
+                  <img
+                    className="day__icon"
+                    src={iconSrc(d.icon)}
+                    alt={d.text}
+                    width="32"
+                    height="32"
+                    loading="lazy"
+                  />
+                  <span className="day__rain">
+                    {d.rain > 0 ? `${d.rain}%` : ""}
+                  </span>
+                  <span className="day__min">{Math.round(d.min)}°</span>
+                  <span className="day__track">
+                    <span
+                      className="day__fill"
+                      style={{
+                        left: `${pct(d.min)}%`,
+                        width: `${pct(d.max) - pct(d.min)}%`,
+                      }}
+                    />
+                  </span>
+                  <span className="day__max">{Math.round(d.max)}°</span>
+                </div>
+              ));
+            })()}
+            <p className="week__note">週間予報は Open-Meteo</p>
+          </section>
+        )}
+
+        {weather && weekError && (
+          <p className="week__error">週間予報を取得できませんでした</p>
         )}
       </main>
 
