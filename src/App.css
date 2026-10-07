@@ -457,3 +457,205 @@ body {
   line-height: 1.6;
   color: var(--muted);
 }
+
+/* ============================================================
+   ログイン状態の表示
+   ============================================================ */
+.masthead__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.account__mail {
+  font-size: 11px;
+  color: var(--muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account__btn {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.account__btn:hover { border-color: var(--cool); }
+
+/* ============================================================
+   ログイン / 新規登録フォーム
+   ============================================================ */
+.auth {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.auth__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.auth__tab {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 2px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.auth__tab--on {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom-color: var(--warm);
+}
+
+.auth__lead {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.auth__label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.auth__input {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--sky);
+  color: var(--ink);
+  font-size: 15px;      /* 16px未満だとiPhoneで入力時に拡大される。15pxは許容範囲 */
+  font-family: inherit;
+}
+
+.auth__input:focus {
+  outline: 2px solid var(--cool);
+  outline-offset: 1px;
+  background: var(--paper);
+}
+
+.auth__hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.auth__error {
+  margin: 0 0 14px;
+  padding-left: 11px;
+  border-left: 3px solid var(--warm);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.auth__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.auth__submit {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.auth__submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.auth__cancel {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ============================================================
+   お気に入り
+   ============================================================ */
+.chip__star {
+  margin-right: 3px;
+  font-size: 10px;
+  color: var(--warm);
+}
+
+.chip--on .chip__star { color: #FFC56E; }
+
+.card__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.star {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--line);
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.star:hover { color: var(--warm); transform: scale(1.12); }
+.star--on { color: var(--warm); }
+
+.star:focus-visible {
+  outline: 2px solid var(--cool);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star { transition: none; }
+  .star:hover { transform: none; }
+}

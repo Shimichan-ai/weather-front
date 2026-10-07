@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import AuthPanel from "./AuthPanel";
 import "./App.css";
 
 // ============================================================
@@ -155,6 +156,15 @@ export default function App() {
   const [week, setWeek] = useState(null);       // 週間予報
   const [weekError, setWeekError] = useState(null);
   const [waking, setWaking] = useState(0);   // 再試行の回数。0なら通常
+
+  // --- ログイン関連 ---
+  // トークンはブラウザのlocalStorageに保存する。
+  // ページを閉じても残るので、次に開いたときログイン状態が続く。
+  // useState に関数を渡すと、初回の1回だけ実行される（毎回読みに行かない）
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [userEmail, setUserEmail] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const [authOpen, setAuthOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -208,6 +218,92 @@ export default function App() {
     }
     loadWeather();
   }, [selected]);
+
+
+  // ============================================================
+  // ログイン状態の管理
+  // ============================================================
+
+  // 認証が必要なAPIを叩くときの共通処理。
+  // トークンを添えて、401が返ったら自動でログアウトする。
+  // 各所に同じ処理を書かないためにまとめている。
+  async function authFetch(path, options = {}) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (res.status === 401) {
+      logout();                       // 期限切れ。黙って切る
+      throw new Error("ログインの有効期限が切れました");
+    }
+    return res;
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    setToken(null);
+    setUserEmail(null);
+    setFavorites([]);
+  }
+
+  function handleLoggedIn(newToken, email) {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUserEmail(email);
+    setAuthOpen(false);
+  }
+
+  // トークンがあるときだけ、本人確認とお気に入りの取得を行う。
+  // トークンは期限切れや改ざんの可能性があるので、
+  // 「持っている＝ログイン中」とは考えず、必ずサーバーに確認する。
+  useEffect(() => {
+    if (!token) return;
+
+    async function loadAccount() {
+      try {
+        const [meRes, favRes] = await Promise.all([
+          authFetch("/auth/me"),
+          authFetch("/favorites"),
+        ]);
+        if (meRes.ok) setUserEmail((await meRes.json()).email);
+        if (favRes.ok) setFavorites((await favRes.json()).favorites);
+      } catch {
+        // authFetch の中でログアウト済み。ここでは何もしない
+      }
+    }
+    loadAccount();
+  }, [token]);
+
+  // お気に入りがあれば、開いた瞬間にその地域を表示する。
+  // 「毎回選び直す手間を省く」のがログイン機能の目的なので、ここが本題。
+  useEffect(() => {
+    if (!selected && favorites.length > 0) {
+      setSelected(favorites[0]);
+    }
+  }, [favorites, selected]);
+
+  async function toggleFavorite(area) {
+    if (!token) {
+      setAuthOpen(true);              // 未ログインならログイン画面を出す
+      return;
+    }
+    const isFav = favorites.includes(area);
+    try {
+      const res = isFav
+        ? await authFetch(`/favorites?area=${encodeURIComponent(area)}`, { method: "DELETE" })
+        : await authFetch("/favorites", {
+            method: "POST",
+            body: JSON.stringify({ area }),
+          });
+      if (res.ok) setFavorites((await res.json()).favorites);
+    } catch {
+      // ログアウト済み。画面はそのまま
+    }
+  }
 
   // 週間予報：Open-Meteoを直接叩く。
   // 自作APIとは独立させ、片方が落ちてももう片方は表示されるようにする。
@@ -269,9 +365,33 @@ export default function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <p className="eyebrow">WeatherAPI.com 提供</p>
-        <h1 className="title">きょうの天気</h1>
+        <div className="masthead__row">
+          <div>
+            <p className="eyebrow">WeatherAPI.com 提供</p>
+            <h1 className="title">きょうの天気</h1>
+          </div>
+          <div className="account">
+            {userEmail ? (
+              <>
+                <span className="account__mail">{userEmail}</span>
+                <button className="account__btn" onClick={logout}>ログアウト</button>
+              </>
+            ) : (
+              <button className="account__btn" onClick={() => setAuthOpen(true)}>
+                ログイン
+              </button>
+            )}
+          </div>
+        </div>
       </header>
+
+      {authOpen && (
+        <AuthPanel
+          apiBase={API_BASE}
+          onSuccess={handleLoggedIn}
+          onCancel={() => setAuthOpen(false)}
+        />
+      )}
 
       <nav className="areas" aria-label="地域を選ぶ">
         {areas.length === 0 && !error && waking === 0 && (
@@ -283,6 +403,7 @@ export default function App() {
             className={`chip ${selected === name ? "chip--on" : ""}`}
             onClick={() => setSelected(name)}
           >
+            {favorites.includes(name) && <span className="chip__star">★</span>}
             {name}
           </button>
         ))}
@@ -320,7 +441,23 @@ export default function App() {
           <article className="card">
             <div className="card__head">
               <h2 className="place">{weather.area}</h2>
-              <time className="date">{weather.date}</time>
+              <div className="card__right">
+                <button
+                  className={`star ${favorites.includes(weather.area) ? "star--on" : ""}`}
+                  onClick={() => toggleFavorite(weather.area)}
+                  title={
+                    !token
+                      ? "ログインするとお気に入りに保存できます"
+                      : favorites.includes(weather.area)
+                        ? "お気に入りから外す"
+                        : "お気に入りに追加"
+                  }
+                  aria-label="お気に入り"
+                >
+                  {favorites.includes(weather.area) ? "★" : "☆"}
+                </button>
+                <time className="date">{weather.date}</time>
+              </div>
             </div>
 
             {/* アイコンと天気名を横並びに */}
