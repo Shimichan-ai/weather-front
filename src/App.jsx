@@ -56,6 +56,33 @@ const WMO = {
 
 const wmoInfo = (code) => WMO[code] || ["cloudy", "—"];
 
+
+// ============================================================
+// 1日の代表天気を決める
+//
+//   Open-Meteo の daily weather_code は「その日で最も荒れた天気」。
+//   23時間晴れでも1時間小雨なら「雨」になり、週間予報が雨だらけに見える。
+//
+//   そこで日中（9〜17時）の1時間ごとの天気を集計し、
+//   一番多かったものを代表とする。日本の天気予報の「日中の天気」と同じ考え方。
+//   同数なら番号の大きい（＝荒れた）ほうを取り、雨を見落とさないようにする。
+// ============================================================
+function representativeCode(date, hourly) {
+  const counts = {};
+  hourly.time.forEach((t, i) => {
+    if (!t.startsWith(date)) return;
+    const hour = Number(t.slice(11, 13));
+    if (hour < 9 || hour > 17) return;
+    const code = hourly.weather_code[i];
+    counts[code] = (counts[code] || 0) + 1;
+  });
+
+  const ranked = Object.entries(counts).sort(
+    ([codeA, nA], [codeB, nB]) => nB - nA || Number(codeB) - Number(codeA)
+  );
+  return ranked.length ? Number(ranked[0][0]) : null;
+}
+
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
 function dayLabel(dateStr, index) {
@@ -165,6 +192,11 @@ export default function App() {
   const [userEmail, setUserEmail] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [authOpen, setAuthOpen] = useState(false);
+  // ☆から来た場合に「なぜログインが必要か」を伝えるための文言
+  const [authReason, setAuthReason] = useState(null);
+  // ☆を押してからログインした場合、ログイン完了後にその地域を自動で保存する。
+  // 「押したのに保存されていない」という肩透かしを防ぐ
+  const [pendingFavorite, setPendingFavorite] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -255,6 +287,12 @@ export default function App() {
     setToken(newToken);
     setUserEmail(email);
     setAuthOpen(false);
+    setAuthReason(null);
+  }
+
+  function openLogin(reason = null) {
+    setAuthReason(reason);
+    setAuthOpen(true);
   }
 
   // トークンがあるときだけ、本人確認とお気に入りの取得を行う。
@@ -271,6 +309,15 @@ export default function App() {
         ]);
         if (meRes.ok) setUserEmail((await meRes.json()).email);
         if (favRes.ok) setFavorites((await favRes.json()).favorites);
+
+        if (pendingFavorite) {
+          const res = await authFetch("/favorites", {
+            method: "POST",
+            body: JSON.stringify({ area: pendingFavorite }),
+          });
+          if (res.ok) setFavorites((await res.json()).favorites);
+          setPendingFavorite(null);
+        }
       } catch {
         // authFetch の中でログアウト済み。ここでは何もしない
       }
@@ -288,7 +335,10 @@ export default function App() {
 
   async function toggleFavorite(area) {
     if (!token) {
-      setAuthOpen(true);              // 未ログインならログイン画面を出す
+      // 押した地域を覚えておき、ログイン後に自動で保存する
+      setPendingFavorite(area);
+      openLogin(`「${area}」をお気に入りに保存するには、ログインしてください。`);
+      window.scrollTo({ top: 0, behavior: "smooth" });   // フォームは画面上部にある
       return;
     }
     const isFav = favorites.includes(area);
@@ -319,15 +369,19 @@ export default function App() {
           "https://api.open-meteo.com/v1/forecast" +
           `?latitude=${lat}&longitude=${lon}` +
           "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+          "&hourly=weather_code" +
           "&timezone=Asia%2FTokyo&forecast_days=7";
         const res = await fetch(url);
         if (!res.ok) throw new Error(`週間予報の取得に失敗しました (${res.status})`);
-        const d = (await res.json()).daily;
+        const json = await res.json();
+        const d = json.daily;
 
         // 配列が項目ごとに分かれて返るので、日付ごとにまとめ直す
         setWeek(
           d.time.map((date, i) => {
-            const [icon, text] = wmoInfo(d.weather_code[i]);
+            // 日中の代表天気。取れなければ元の値（最も荒れた天気）を使う
+            const code = representativeCode(date, json.hourly) ?? d.weather_code[i];
+            const [icon, text] = wmoInfo(code);
             return {
               date,
               icon,
@@ -377,7 +431,7 @@ export default function App() {
                 <button className="account__btn" onClick={logout}>ログアウト</button>
               </>
             ) : (
-              <button className="account__btn" onClick={() => setAuthOpen(true)}>
+              <button className="account__btn" onClick={() => openLogin()}>
                 ログイン
               </button>
             )}
@@ -385,11 +439,31 @@ export default function App() {
         </div>
       </header>
 
+      {/* ログインする意味を、押す前に伝える。
+          機能があっても気づかれなければ、無いのと同じ */}
+      {!userEmail && !authOpen && (
+        <div className="promo">
+          <p className="promo__text">
+            ログインすると、お気に入りの地域を<strong>スマホとPCで共有</strong>でき、
+            開いた瞬間に表示されます。
+          </p>
+          <button className="promo__btn" onClick={() => openLogin()}>
+            ログイン / 新規登録
+          </button>
+        </div>
+      )}
+
+      {authOpen && authReason && <p className="auth-reason">{authReason}</p>}
+
       {authOpen && (
         <AuthPanel
           apiBase={API_BASE}
           onSuccess={handleLoggedIn}
-          onCancel={() => setAuthOpen(false)}
+          onCancel={() => {
+            setAuthOpen(false);
+            setAuthReason(null);
+            setPendingFavorite(null);
+          }}
         />
       )}
 
@@ -397,16 +471,27 @@ export default function App() {
         {areas.length === 0 && !error && waking === 0 && (
           <p className="hint">地域一覧を読み込んでいます…</p>
         )}
-        {areas.map((name) => (
+        {/* お気に入りを先頭に並べる。ログインすると「自分専用の並び」になる */}
+        {(() => {
+          // 一覧に存在する地域だけをお気に入りとして扱う（区切り位置がずれないように）
+          const favs = favorites.filter((f) => areas.includes(f));
+          return [...favs, ...areas.filter((a) => !favs.includes(a))].map((name, i) => (
           <button
             key={name}
-            className={`chip ${selected === name ? "chip--on" : ""}`}
+            className={[
+              "chip",
+              selected === name ? "chip--on" : "",
+              favorites.includes(name) ? "chip--fav" : "",
+              // お気に入りの最後の1つの後ろに区切りを入れる
+              i === favs.length - 1 ? "chip--fav-last" : "",
+            ].join(" ")}
             onClick={() => setSelected(name)}
           >
             {favorites.includes(name) && <span className="chip__star">★</span>}
             {name}
           </button>
-        ))}
+          ));
+        })()}
       </nav>
 
       <main className="panel">
@@ -455,6 +540,7 @@ export default function App() {
                   aria-label="お気に入り"
                 >
                   {favorites.includes(weather.area) ? "★" : "☆"}
+                  {!token && <span className="star__label">保存</span>}
                 </button>
                 <time className="date">{weather.date}</time>
               </div>

@@ -659,3 +659,81 @@ body {
   .star { transition: none; }
   .star:hover { transform: none; }
 }
+
+/* ============================================================
+   ログインの意味を伝える案内帯
+   ============================================================ */
+.promo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.promo__text {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.promo__text strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.promo__btn {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* スマホでは縦に積む */
+@media (max-width: 420px) {
+  .promo { flex-direction: column; align-items: stretch; }
+  .promo__btn { padding: 9px 0; }
+}
+
+/* ☆から来たときに表示する「なぜログインが必要か」 */
+.auth-reason {
+  margin: 0 0 10px;
+  padding-left: 11px;
+  border-left: 3px solid var(--warm);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* ============================================================
+   お気に入りを先頭に並べたときの見た目
+   ============================================================ */
+.chip--fav {
+  border-color: var(--warm);
+}
+
+/* お気に入りとそれ以外の間に少し隙間を空けて、塊として見せる */
+.chip--fav-last {
+  margin-right: 10px;
+}
+
+/* 未ログイン時の☆に添える文字 */
+.star__label {
+  margin-left: 3px;
+  font-size: 11px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.star:hover .star__label { color: var(--warm); }
